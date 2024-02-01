@@ -29,14 +29,39 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
 
-        const blogsCollection = client.db('blog-website-DB').collection('blog');
-        const usersCollection = client.db('blog-website-DB').collection('user')
+        const blogsCollection = client.db('blog-website-DB').collection('blogs');
+        const usersCollection = client.db('blog-website-DB').collection('users')
 
 
+        //------------------------blogs related apis---------------------------//
+
+        //store blogs data to database
+        app.post('/blogs', async (req, res) => {
+            const blogs = req.body;
+            const result = await blogsCollection.insertOne(blogs);
+            res.send(result)
+        })
+
+        //get all blogs
+        app.get('/blogs', async (req, res) => {
+            const result = await blogsCollection.find().toArray()
+            res.send(result)
+        })
+
+        app.get('/blogs/popular', async (req, res) => {
+            const result = await blogsCollection.find().sort({ likes: -1 }).toArray()
+            res.send(result)
+        })
+
+        //get blogs for authors
+        app.get('/blogs/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { 'author.email': email }
+            const result = await blogsCollection.find(query).toArray()
+            res.send(result)
+        })
 
 
-
-        
         // -----------users related apis---------------//
 
         // get all users from database for admin
@@ -75,16 +100,15 @@ async function run() {
 
         //add user to database using put method
         app.put('/user', async (req, res) => {
-            const userInfo = req.body;
-            const query = { email: userInfo.email };
-            const options = { upsert: true };
+            const userInfo = req.body
+            const query = { email: userInfo.email }
+            const options = { upsert: true }
             const updateDoc = {
-                $set: {
-                    userInfo
-                }
-            };
-            const result = await usersCollection.updateOne(query, updateDoc, options);
-            res.send(result);
+                $set: userInfo,
+            }
+            const result = await usersCollection.updateOne(query, updateDoc, options)
+
+            res.send(result)
         })
 
         // delete a specific user 
