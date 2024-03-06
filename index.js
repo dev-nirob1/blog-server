@@ -14,7 +14,7 @@ app.use(cors(corsOption))
 app.use(express.json())
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@simplecrud.xgcpsfy.mongodb.net/?retryWrites=true&w=majority`;
 
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
@@ -35,12 +35,6 @@ async function run() {
 
         //------------------------blogs related apis---------------------------//
 
-        //store blogs data to database
-        app.post('/blogs', async (req, res) => {
-            const blogs = req.body;
-            const result = await blogsCollection.insertOne(blogs);
-            res.send(result)
-        })
 
         //get all blogs
         app.get('/blogs', async (req, res) => {
@@ -48,6 +42,17 @@ async function run() {
             res.send(result)
         })
 
+        //get single blog details
+        app.get('/blogs/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            console.log(id)
+            console.log(query)
+            const result = await blogsCollection.findOne(query)
+            res.send(result)
+        })
+
+        //get pupular blogs based on likes
         app.get('/blogs/popular', async (req, res) => {
             const result = await blogsCollection.find().sort({ likes: -1 }).toArray()
             res.send(result)
@@ -61,6 +66,12 @@ async function run() {
             res.send(result)
         })
 
+        //store blogs data to database
+        app.post('/blogs', async (req, res) => {
+            const blogs = req.body;
+            const result = await blogsCollection.insertOne(blogs);
+            res.send(result)
+        })
 
         // -----------users related apis---------------//
 
