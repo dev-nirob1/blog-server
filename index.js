@@ -31,15 +31,33 @@ async function run() {
 
         const blogsCollection = client.db('blog-website-DB').collection('blogs');
         const usersCollection = client.db('blog-website-DB').collection('users')
+        const commentsCollection = client.db('blog-website-DB').collection('comments')
 
 
         //------------------------blogs related apis---------------------------//
 
 
-        //get all blogs
+        //get blogs for home page
         app.get('/blogs', async (req, res) => {
-            const result = await blogsCollection.find().toArray()
+            const result = await blogsCollection.find().limit(3).toArray()
             res.send(result)
+        })
+
+        //get all blogs for pagination
+        app.get('/blogs', async (req, res) => {
+            const page = parseInt(req.query.page);
+            const size = parseInt(req.query.size);
+            const skip = page * size
+            const result = await blogsCollection.find().sort({ 'author.date': - 1 }).skip(skip).limit(size).toArray()
+            res.send(result)
+        })
+
+
+
+        //get total number of blogs for pagination 
+        app.get('/blogsCount', async (req, res) => {
+            const totalBlogs = await blogsCollection.estimatedDocumentCount();
+            res.send({ totalBlogs })
         })
 
         //get single blog details
@@ -63,6 +81,15 @@ async function run() {
             const result = await blogsCollection.find(query).toArray()
             res.send(result)
         })
+
+        //get blogs for authors
+        // app.get('/blogs', async(req,res) => {
+        //     const email = req.params.email;
+        //     const query = {'author.email': email}
+        //     const result = await blogsCollection.find(query).toArray()
+        //     res.send(result)
+        // })
+
 
         //store blogs data to database
         app.post('/blogs', async (req, res) => {
@@ -127,8 +154,6 @@ async function run() {
             const result = await usersCollection.deleteOne(query);
             res.send(result);
         })
-
-
 
 
 
