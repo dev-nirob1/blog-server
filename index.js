@@ -39,12 +39,12 @@ async function run() {
 
         //get blogs for home page
         app.get('/blogs', async (req, res) => {
-            const result = await blogsCollection.find().limit(3).toArray()
+            const result = await blogsCollection.find().sort({ 'author.date': -1 }).limit(5).toArray()
             res.send(result)
         })
 
         //get all blogs for pagination
-        app.get('/blogs', async (req, res) => {
+        app.get('/blogs/pagination', async (req, res) => {
             const page = parseInt(req.query.page);
             const size = parseInt(req.query.size);
             const skip = page * size
@@ -52,7 +52,14 @@ async function run() {
             res.send(result)
         })
 
-
+        //get all blogs data for management
+        app.get('/blogs/management', async (req, res) => {
+            const options = {
+                projection: { _id: 1, author: 1, title: 1, titleImage: 1, category: 1, approved: 1 }
+            }
+            const result = await blogsCollection.find({}, options).toArray()
+            res.send(result)
+        })
 
         //get total number of blogs for pagination 
         app.get('/blogsCount', async (req, res) => {
@@ -70,7 +77,7 @@ async function run() {
 
         //get pupular blogs based on likes
         app.get('/blogs/popular', async (req, res) => {
-            const result = await blogsCollection.find().sort({ likes: -1 }).toArray()
+            const result = await blogsCollection.find().sort({ likes: -1 }).limit(5).toArray()
             res.send(result)
         })
 
