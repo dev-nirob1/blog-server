@@ -39,7 +39,7 @@ async function run() {
 
         //get blogs for home page
         app.get('/blogs', async (req, res) => {
-            const result = await blogsCollection.find().sort({ 'author.date': -1 }).limit(5).toArray()
+            const result = await blogsCollection.find({ 'approved': true }).sort({ 'author.date': -1 }).limit(5).toArray()
             res.send(result)
         })
 
@@ -48,7 +48,7 @@ async function run() {
             const page = parseInt(req.query.page);
             const size = parseInt(req.query.size);
             const skip = page * size
-            const result = await blogsCollection.find().sort({ 'author.date': - 1 }).skip(skip).limit(size).toArray()
+            const result = await blogsCollection.find({ 'approved': true }).sort({ 'author.date': - 1 }).skip(skip).limit(size).toArray()
             res.send(result)
         })
 
@@ -63,8 +63,9 @@ async function run() {
 
         //get total number of blogs for pagination 
         app.get('/blogsCount', async (req, res) => {
-            const totalBlogs = await blogsCollection.estimatedDocumentCount();
-            res.send({ totalBlogs })
+            const filter = {'approved': true}
+            const approvedBlogs = await blogsCollection.estimatedDocumentCount(filter);
+            res.send({ approvedBlogs })
         })
 
         //get single blog details
@@ -77,7 +78,7 @@ async function run() {
 
         //get pupular blogs based on likes
         app.get('/blogs/popular', async (req, res) => {
-            const result = await blogsCollection.find().sort({ likes: -1 }).limit(5).toArray()
+            const result = await blogsCollection.find({ 'approved': true }).sort({ likes: -1 }).limit(5).toArray()
             res.send(result)
         })
 
@@ -89,14 +90,44 @@ async function run() {
             res.send(result)
         })
 
-        //get blogs for authors
-        // app.get('/blogs', async(req,res) => {
-        //     const email = req.params.email;
-        //     const query = {'author.email': email}
-        //     const result = await blogsCollection.find(query).toArray()
-        //     res.send(result)
-        // })
 
+        //update blogs status (approve)
+        app.patch('/blogs/approved/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id)
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    approved: true,
+                    adminsMessage: {
+                        title: 'Congratulations! 🎉 Your blog has been approved for publication on our website.',
+                        message: 'We are thrilled to inform you that your blog has been approved for publication on our website by an Admin. 🎉 Get ready to share your thoughts and insights with the world! 📝 Keep writing and inspiring others! ✨'
+                    }
+                },
+            };
+            const result = await blogsCollection.updateOne(filter, updateDoc, options)
+            res.send(result)
+        })
+
+        //update blogs status (deny)
+        app.patch('/blogs/denied/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id)
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const updateDoc = {
+                $set: {
+                    denied: false,
+                    adminsMessage: {
+                        title: 'Sorry, Your Blog Has Been Denied',
+                        message: 'We regret to inform you that your blog has been denied for publication on our website by an Admin. Please review our guidelines and try again. Thank you for your submission.'
+                    }
+                },
+            };
+            const result = await blogsCollection.updateOne(filter, updateDoc, options)
+            res.send(result)
+        })
 
         //store blogs data to database
         app.post('/blogs', async (req, res) => {
@@ -104,6 +135,20 @@ async function run() {
             const result = await blogsCollection.insertOne(blogs);
             res.send(result)
         })
+
+
+        //delete a blog
+        app.delete('/blogs/delete/:id', async(req, res)=> {
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)}
+            const result = await blogsCollection.deleteOne(query)
+            res.send(result)
+        })
+
+
+
+
+
 
         // -----------users related apis---------------//
 
