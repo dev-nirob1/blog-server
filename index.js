@@ -55,7 +55,7 @@ async function run() {
         //get all blogs data for management
         app.get('/blogs/management', async (req, res) => {
             const options = {
-                projection: { _id: 1, author: 1, title: 1, titleImage: 1, category: 1, approved: 1 }
+                projection: { _id: 1, author: 1, title: 1, titleImage: 1, category: 1, approved: 1, denied: 1 }
             }
             const result = await blogsCollection.find({}, options).toArray()
             res.send(result)
@@ -63,8 +63,8 @@ async function run() {
 
         //get total number of blogs for pagination 
         app.get('/blogsCount', async (req, res) => {
-            const filter = {'approved': true}
-            const approvedBlogs = await blogsCollection.estimatedDocumentCount(filter);
+            const filter = { 'approved': true }
+            const approvedBlogs = await blogsCollection.countDocuments(filter);
             res.send({ approvedBlogs })
         })
 
@@ -118,7 +118,7 @@ async function run() {
             const options = { upsert: true }
             const updateDoc = {
                 $set: {
-                    denied: false,
+                    denied: true,
                     adminsMessage: {
                         title: 'Sorry, Your Blog Has Been Denied',
                         message: 'We regret to inform you that your blog has been denied for publication on our website by an Admin. Please review our guidelines and try again. Thank you for your submission.'
@@ -138,9 +138,9 @@ async function run() {
 
 
         //delete a blog
-        app.delete('/blogs/delete/:id', async(req, res)=> {
+        app.delete('/blogs/delete/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)}
+            const query = { _id: new ObjectId(id) }
             const result = await blogsCollection.deleteOne(query)
             res.send(result)
         })
@@ -158,8 +158,30 @@ async function run() {
             res.send(result);
         })
 
+        //get specific user info
+        app.get('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const result = await usersCollection.findOne(query)
+            res.send(result)
+        })
+
         //update user role to author
         app.patch('/user/author/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: {
+                    role: 'author'
+                }
+            };
+            const result = await usersCollection.updateOne(query, updateDoc, options);
+            res.send(result);
+        })
+
+        //demote an author to normal user
+        app.patch('/user/demoteAuthor/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email };
             const options = { upsert: true };
@@ -200,7 +222,7 @@ async function run() {
         })
 
         // delete a specific user 
-        app.delete('/users/:email', async (req, res) => {
+        app.delete('/users/delete/:email', async (req, res) => {
             const email = req.params.email;
             const query = { email: email };
             const result = await usersCollection.deleteOne(query);
